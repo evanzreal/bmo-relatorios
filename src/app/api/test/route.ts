@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+export const dynamic = 'force-dynamic';
+
 /**
  * Endpoint de teste que demonstra como usar a API de conversão HTML para PDF
  * 

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import puppeteer from 'puppeteer';
+import chromium from 'chrome-aws-lambda';
+
+export const dynamic = 'force-dynamic';
 
 /**
  * API para conversão de HTML para PDF
@@ -32,13 +35,27 @@ export async function POST(request: NextRequest) {
     // Configurações opcionais
     const options = body.options || {};
     
-    // Iniciar o Puppeteer
-    const browser = await puppeteer.launch({
-      headless: 'new',
-      args: ['--no-sandbox', '--disable-setuid-sandbox'],
-    });
+    // Determinar se estamos em ambiente de desenvolvimento ou produção
+    const isProduction = process.env.NODE_ENV === 'production';
     
+    let browser;
     try {
+      // Configurar opções do navegador dependendo do ambiente
+      if (isProduction) {
+        // Usar chrome-aws-lambda na Vercel (produção)
+        browser = await puppeteer.launch({
+          args: chromium.args,
+          executablePath: process.env.CHROME_EXECUTABLE_PATH || await chromium.executablePath,
+          headless: chromium.headless,
+        });
+      } else {
+        // Ambiente de desenvolvimento local
+        browser = await puppeteer.launch({
+          headless: 'new',
+          args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+      }
+      
       const page = await browser.newPage();
       
       // Configurar o tamanho da página (opções padrão A4)
@@ -82,7 +99,7 @@ export async function POST(request: NextRequest) {
     } finally {
       // Garantir que o navegador seja fechado mesmo em caso de erro
       if (browser) {
-        await browser.close();
+        await browser.close().catch(console.error);
       }
     }
   } catch (error) {

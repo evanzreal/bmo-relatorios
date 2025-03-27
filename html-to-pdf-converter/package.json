@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
+    "vercel-build": "npm run build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -29,5 +30,8 @@
     "eslint-config-next": "15.2.4",
     "tailwindcss": "^4.0.17",
     "typescript": "^5"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
