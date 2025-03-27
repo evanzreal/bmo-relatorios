@@ -1,0 +1,15 @@
+{
+  "version": 2,
+  "buildCommand": "cd html-to-pdf-converter && npm run build",
+  "outputDirectory": "html-to-pdf-converter/.next",
+  "framework": "nextjs",
+  "routes": [
+    { "src": "/(.*)", "dest": "/html-to-pdf-converter/$1" }
+  ],
+  "functions": {
+    "html-to-pdf-converter/api/convert": {
+      "memory": 3008,
+      "maxDuration": 60
+    }
+  }
+} 

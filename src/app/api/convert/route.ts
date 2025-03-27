@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import puppeteer from 'puppeteer';
-import chromium from 'chrome-aws-lambda';
+import { htmlToPdf } from '../../../utils/chromium';
 
 export const dynamic = 'force-dynamic';
+export const maxDuration = 60;
 
 /**
  * API para conversão de HTML para PDF
@@ -12,6 +12,8 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
   try {
+    console.log('Requisição recebida para conversão HTML para PDF');
+    
     // Verificar se é uma requisição JSON
     const contentType = request.headers.get('content-type');
     if (!contentType || !contentType.includes('application/json')) {
@@ -32,77 +34,28 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Iniciando conversão de HTML para PDF');
+    
     // Configurações opcionais
     const options = body.options || {};
     
-    // Determinar se estamos em ambiente de desenvolvimento ou produção
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Usar o utilitário para converter HTML em PDF
+    const pdfBuffer = await htmlToPdf(html, options);
     
-    let browser;
-    try {
-      // Configurar opções do navegador dependendo do ambiente
-      if (isProduction) {
-        // Usar chrome-aws-lambda na Vercel (produção)
-        browser = await puppeteer.launch({
-          args: chromium.args,
-          executablePath: process.env.CHROME_EXECUTABLE_PATH || await chromium.executablePath,
-          headless: chromium.headless,
-        });
-      } else {
-        // Ambiente de desenvolvimento local
-        browser = await puppeteer.launch({
-          headless: 'new',
-          args: ['--no-sandbox', '--disable-setuid-sandbox'],
-        });
-      }
-      
-      const page = await browser.newPage();
-      
-      // Configurar o tamanho da página (opções padrão A4)
-      await page.setViewport({
-        width: options.width || 1240,
-        height: options.height || 1754,
-        deviceScaleFactor: 1,
-      });
-      
-      // Carregar o HTML no Puppeteer
-      await page.setContent(html, {
-        waitUntil: 'networkidle0',
-      });
-      
-      // Gerar o PDF
-      const pdfBuffer = await page.pdf({
-        format: options.format || 'A4',
-        printBackground: options.printBackground !== false,
-        margin: options.margin || {
-          top: '40px',
-          right: '40px',
-          bottom: '40px',
-          left: '40px',
-        },
-      });
-      
-      // Fechar o navegador
-      await browser.close();
-      
-      // Configurar cabeçalhos da resposta
-      const headers = new Headers();
-      headers.set('Content-Type', 'application/pdf');
-      headers.set('Content-Disposition', `attachment; filename="documento-${Date.now()}.pdf"`);
-      headers.set('Content-Length', pdfBuffer.length.toString());
-      
-      // Retornar o PDF como resposta
-      return new NextResponse(pdfBuffer, {
-        status: 200,
-        headers,
-      });
-    } finally {
-      // Garantir que o navegador seja fechado mesmo em caso de erro
-      if (browser) {
-        await browser.close().catch(console.error);
-      }
-    }
-  } catch (error) {
+    console.log('PDF gerado com sucesso');
+    
+    // Configurar cabeçalhos da resposta
+    const headers = new Headers();
+    headers.set('Content-Type', 'application/pdf');
+    headers.set('Content-Disposition', `attachment; filename="documento-${Date.now()}.pdf"`);
+    headers.set('Content-Length', pdfBuffer.length.toString());
+    
+    // Retornar o PDF como resposta
+    return new NextResponse(pdfBuffer, {
+      status: 200,
+      headers,
+    });
+  } catch (error: any) {
     console.error('Erro ao processar a requisição:', error);
     return NextResponse.json(
       { error: 'Erro interno do servidor', detalhes: error.message }, 
