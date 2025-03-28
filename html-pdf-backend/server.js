@@ -1,5 +1,7 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
+const fs = require('fs');
 
 // Configuração específica para Vercel e ambientes locais
 const chromium = require('chrome-aws-lambda');
@@ -15,9 +17,47 @@ app.use(cors()); // Habilita CORS para permitir requisições do Mini App
 app.use(express.json({ limit: '10mb' })); // Permite receber JSON no corpo da requisição (aumentamos o limite para HTML grande)
 app.use(express.urlencoded({ extended: true, limit: '10mb' })); // Permite receber dados de formulário (não usaremos diretamente, mas é bom ter)
 
-// Rota principal para teste (opcional)
+// Criar uma pasta public se não existir (para servir arquivos estáticos)
+const publicDir = path.join(__dirname, 'public');
+if (!fs.existsSync(publicDir)) {
+  fs.mkdirSync(publicDir);
+}
+
+// Servir arquivos estáticos
+app.use(express.static('public'));
+
+// Criar uma página de teste para verificar se o servidor está funcionando
+const testHtml = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Servidor BMO-Relatorios Está Funcionando</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #4CAF50; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 4px; background: #4CAF50; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Servidor BMO-Relatorios <span class="badge">ONLINE</span></h1>
+        <p>O servidor de conversão HTML para PDF está funcionando corretamente.</p>
+        <h2>Endpoints disponíveis:</h2>
+        <ul>
+            <li><strong>GET /</strong> - Esta página</li>
+            <li><strong>POST /convert</strong> - Conversão de HTML para PDF</li>
+        </ul>
+        <hr>
+        <p>Timestamp: ${new Date().toISOString()}</p>
+    </div>
+</body>
+</html>
+`;
+
+// Rota principal para teste
 app.get('/', (req, res) => {
-  res.send('Servidor HTML-to-PDF está rodando!');
+  res.send(testHtml);
 });
 
 // Rota para a conversão
