@@ -7,7 +7,8 @@ const serverless = require('serverless-http');
 
 // API externa para conversão HTML para PDF - precisaremos configurar
 const API_PDF_SERVICE = process.env.PDF_API_URL || 'https://api.pdfshift.io/v3/convert/pdf';
-const API_PDF_KEY = process.env.PDF_API_KEY || ''; // Chave da API precisa ser configurada
+// Chave PDFShift fornecida pelo usuário
+const API_PDF_KEY = process.env.PDF_API_KEY || 'sk_9d2ee56179a2255b2618e2ca42b04d2bfa25fbf6';
 
 const app = express();
 
@@ -29,7 +30,8 @@ app.get('/status', (req, res) => {
     status: 'online',
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV || 'development',
-    serviceProvider: 'API externa para conversão PDF'
+    serviceProvider: 'PDFShift API',
+    apiConfigured: !!API_PDF_KEY
   });
 });
 
@@ -49,8 +51,9 @@ app.get('/', (req, res) => {
     <body>
       <h1>Serviço de Conversão HTML para PDF</h1>
       <div class="info">
-        <p>Este serviço converte código HTML em documentos PDF via API externa.</p>
+        <p>Este serviço converte código HTML em documentos PDF via PDFShift API.</p>
         <p>Status: <strong>Ativo</strong></p>
+        <p>API Configurada: <strong>${!!API_PDF_KEY ? 'Sim' : 'Não'}</strong></p>
         <p>Timestamp: ${new Date().toISOString()}</p>
       </div>
       
@@ -79,43 +82,26 @@ app.post('/convert', async (req, res) => {
   }
 
   try {
-    console.log('Enviando HTML para serviço externo...');
+    console.log('Enviando HTML para PDFShift...');
     
-    // Usar PDFShift como exemplo - você precisará se registrar e obter uma chave API
-    // https://pdfshift.io oferece um plano gratuito
-    let apiResponse;
+    // Autenticação básica para PDFShift
+    const auth = Buffer.from(`api:${API_PDF_KEY}`).toString('base64');
     
-    if (API_PDF_KEY) {
-      // Se tiver uma chave API configurada, usa o serviço escolhido
-      const auth = Buffer.from(`api:${API_PDF_KEY}`).toString('base64');
-      
-      apiResponse = await axios({
-        method: 'post',
-        url: API_PDF_SERVICE,
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Basic ${auth}`
-        },
-        data: {
-          source: htmlContent,
-          landscape: false,
-          format: 'A4'
-        },
-        responseType: 'arraybuffer'
-      });
-    } else {
-      // Fallback para um serviço temporário caso não tenha API configurada
-      // NOTA: Isso é apenas para demonstração e pode ser instável ou limitado
-      console.log('Aviso: Usando serviço de demonstração. Configure uma API própria para produção.');
-      
-      apiResponse = await axios({
-        method: 'post',
-        url: 'https://api.htmlcsstoimage.com/v1/demo',
-        headers: { 'Content-Type': 'application/json' },
-        data: { html: htmlContent, selector: 'body', ms_delay: 1000 },
-        responseType: 'arraybuffer'
-      });
-    }
+    const apiResponse = await axios({
+      method: 'post',
+      url: API_PDF_SERVICE,
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Basic ${auth}`
+      },
+      data: {
+        source: htmlContent,
+        landscape: false,
+        format: 'A4',
+        use_print: false
+      },
+      responseType: 'arraybuffer'
+    });
 
     console.log('PDF gerado com sucesso. Enviando resposta...');
     
@@ -126,10 +112,38 @@ app.post('/convert', async (req, res) => {
 
   } catch (error) {
     console.error('Erro durante a conversão:', error.message);
-    const errorMessage = error.response 
-      ? `Erro do serviço externo: ${error.response.status} ${error.response.statusText}`
-      : `Erro: ${error.message}`;
+    let errorMessage = `Erro: ${error.message}`;
+    
+    // Tratamento especial para erro da API PDFShift
+    if (error.response) {
+      console.error('Resposta de erro completa:', error.response.status, error.response.statusText);
       
+      // Se tiver dados no formato buffer, tenta convertê-los para texto legível
+      if (error.response.data) {
+        try {
+          if (error.response.data instanceof Buffer) {
+            const errorData = error.response.data.toString('utf8');
+            console.error('Dados da resposta de erro:', errorData);
+            
+            try {
+              // Tenta analisar como JSON se possível
+              const parsedError = JSON.parse(errorData);
+              errorMessage = `Erro PDFShift: ${parsedError.message || parsedError.error || JSON.stringify(parsedError)}`;
+            } catch (e) {
+              // Se não for JSON, usa o texto bruto
+              errorMessage = `Erro PDFShift: ${errorData}`;
+            }
+          } else {
+            errorMessage = `Erro do serviço externo: ${error.response.status} ${error.response.statusText}`;
+          }
+        } catch (parseError) {
+          console.error('Não foi possível analisar os dados de erro:', parseError);
+        }
+      } else {
+        errorMessage = `Erro do serviço externo: ${error.response.status} ${error.response.statusText}`;
+      }
+    }
+    
     res.status(500).send(`Erro ao converter HTML para PDF: ${errorMessage}`);
   }
 });
@@ -139,6 +153,7 @@ if (require.main === module) {
   const port = process.env.PORT || 3000;
   app.listen(port, () => {
     console.log(`Servidor ouvindo na porta ${port}`);
+    console.log(`PDFShift API configurada: ${!!API_PDF_KEY}`);
   });
 }
 
