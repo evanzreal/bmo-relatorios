@@ -2,20 +2,23 @@
   "version": 2,
   "builds": [
     {
-      "src": "html-pdf-backend/server.js",
-      "use": "@vercel/node"
+      "src": "html-pdf-backend/serverless.js",
+      "use": "@vercel/node",
+      "config": {
+        "maxLambdaSize": "50mb"
+      }
     }
   ],
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/html-pdf-backend/server.js"
+      "dest": "/html-pdf-backend/serverless.js"
     }
   ],
   "functions": {
-    "html-pdf-backend/server.js": {
-      "memory": 1024,
-      "maxDuration": 30
+    "html-pdf-backend/serverless.js": {
+      "memory": 3008,
+      "maxDuration": 60
     }
   }
 } 
