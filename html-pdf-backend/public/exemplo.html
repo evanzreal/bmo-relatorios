@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Exemplo para Teste</title>
+  <title>Exemplo para Teste - API Externa</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -24,11 +24,28 @@
       color: #718096;
       text-align: center;
     }
+    .alert {
+      background-color: #ebf8ff;
+      border-left: 4px solid #4299e1;
+      padding: 10px 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    code {
+      background: #f1f1f1;
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>Documento de Exemplo</h1>
+    
+    <div class="alert">
+      <strong>Nota:</strong> Este serviço agora utiliza APIs externas para conversão HTML para PDF, garantindo maior compatibilidade.
+    </div>
     
     <p>Este é um documento HTML simples criado para testar a conversão para PDF.</p>
     
@@ -37,14 +54,20 @@
     
     <ol>
       <li>Copie todo este código HTML</li>
-      <li>Cole-o no campo de texto do conversor</li>
-      <li>Clique no botão "Converter para PDF"</li>
+      <li>Faça uma requisição POST para <code>/convert</code> incluindo o HTML no corpo da requisição</li>
     </ol>
+    
+    <h2>Exemplo de curl</h2>
+    <pre><code>curl -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"htmlContent":"&lt;html&gt;&lt;body&gt;&lt;h1&gt;Teste&lt;/h1&gt;&lt;/body&gt;&lt;/html&gt;"}' \
+  https://bmo-relatorios.vercel.app/convert \
+  --output documento.pdf</code></pre>
     
     <h2>Recursos adicionais</h2>
     <ul>
-      <li>O conversor suporta estilos CSS</li>
-      <li>Você pode incluir imagens (com URLs externas)</li>
+      <li>O conversor suporta todos os recursos de HTML moderno</li>
+      <li>Você pode incluir imagens e estilos CSS</li>
       <li>Tabelas e formatação complexa são suportadas</li>
     </ul>
     

@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "html-pdf-backend/serverless.js",
+      "src": "html-pdf-backend/api-proxy.js",
       "use": "@vercel/node",
       "config": {
         "maxLambdaSize": "50mb"
@@ -12,13 +12,13 @@
   "routes": [
     {
       "src": "/(.*)",
-      "dest": "/html-pdf-backend/serverless.js"
+      "dest": "/html-pdf-backend/api-proxy.js"
     }
   ],
   "functions": {
-    "html-pdf-backend/serverless.js": {
-      "memory": 3008,
-      "maxDuration": 60
+    "html-pdf-backend/api-proxy.js": {
+      "memory": 1024,
+      "maxDuration": 30
     }
   }
 } 
