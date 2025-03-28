@@ -11,5 +11,11 @@
       "src": "/(.*)",
       "dest": "/html-pdf-backend/server.js"
     }
-  ]
+  ],
+  "functions": {
+    "html-pdf-backend/server.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  }
 } 

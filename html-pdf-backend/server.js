@@ -2,12 +2,25 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
-
-// Configuração específica para Vercel e ambientes locais
-const chromium = require('chrome-aws-lambda');
 const puppeteerCore = require('puppeteer-core');
+
+// Substituindo chrome-aws-lambda por @sparticuz/chromium
+let chromium;
+try {
+  // Tenta carregar @sparticuz/chromium primeiro
+  chromium = require('@sparticuz/chromium');
+} catch (e) {
+  try {
+    // Fallback para chrome-aws-lambda
+    chromium = require('chrome-aws-lambda');
+  } catch (e2) {
+    console.warn('Nenhuma biblioteca Chromium serverless encontrada. Usando configuração local.');
+    chromium = null;
+  }
+}
+
 // Função para determinar se estamos rodando na Vercel
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = process.env.NODE_ENV === 'production' || process.env.VERCEL === '1';
 
 const app = express();
 const port = process.env.PORT || 3000; // Porta onde o servidor vai rodar
@@ -51,6 +64,7 @@ const testHtml = `
         <hr>
         <p>Timestamp: ${new Date().toISOString()}</p>
         <p>Ambiente: ${isProduction ? 'Produção' : 'Desenvolvimento'}</p>
+        <p>Chromium Provider: ${chromium ? (chromium.headless ? '@sparticuz/chromium' : 'chrome-aws-lambda') : 'local'}</p>
     </div>
 </body>
 </html>
@@ -61,7 +75,8 @@ app.get('/status', (req, res) => {
   res.json({
     status: 'online',
     timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    chromium_provider: chromium ? (chromium.headless ? '@sparticuz/chromium' : 'chrome-aws-lambda') : 'local'
   });
 });
 
@@ -84,12 +99,19 @@ app.post('/convert', async (req, res) => {
   try {
     console.log('Iniciando Puppeteer...');
     
-    if (isProduction) {
-      // Configuração otimizada para Vercel
+    if (isProduction && chromium) {
+      // Configuração otimizada para Vercel com @sparticuz/chromium
+      const executablePath = await chromium.executablePath;
+      
+      console.log(`Usando executable path: ${executablePath}`);
+      console.log(`Args do Chrome: ${JSON.stringify(chromium.args)}`);
+      
       browser = await puppeteerCore.launch({
         args: chromium.args,
-        executablePath: await chromium.executablePath,
-        headless: chromium.headless
+        defaultViewport: chromium.defaultViewport,
+        executablePath: executablePath,
+        headless: chromium.headless,
+        ignoreHTTPSErrors: true
       });
     } else {
       // Configuração para desenvolvimento local

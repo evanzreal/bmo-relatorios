@@ -1,0 +1,5 @@
+# Exclude node_modules
+node_modules
+
+# We're using @sparticuz/chromium which provides its own binary
+.cache 
