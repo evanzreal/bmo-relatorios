@@ -24,7 +24,7 @@ if (!fs.existsSync(publicDir)) {
 }
 
 // Servir arquivos estáticos
-app.use(express.static('public'));
+app.use(express.static(path.join(__dirname, 'public')));
 
 // Criar uma página de teste para verificar se o servidor está funcionando
 const testHtml = `
@@ -50,10 +50,20 @@ const testHtml = `
         </ul>
         <hr>
         <p>Timestamp: ${new Date().toISOString()}</p>
+        <p>Ambiente: ${isProduction ? 'Produção' : 'Desenvolvimento'}</p>
     </div>
 </body>
 </html>
 `;
+
+// Adicionar rota para o status
+app.get('/status', (req, res) => {
+  res.json({
+    status: 'online',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development'
+  });
+});
 
 // Rota principal para teste
 app.get('/', (req, res) => {
@@ -124,8 +134,13 @@ app.post('/convert', async (req, res) => {
   }
 });
 
-// Inicia o servidor
-app.listen(port, () => {
-  console.log(`Servidor backend ouvindo na porta ${port}`);
-  console.log(`Endpoint de conversão: POST http://localhost:${port}/convert`);
-}); 
+// Inicia o servidor se estiver sendo executado diretamente (não importado como módulo)
+if (require.main === module) {
+  app.listen(port, () => {
+    console.log(`Servidor backend ouvindo na porta ${port}`);
+    console.log(`Endpoint de conversão: POST http://localhost:${port}/convert`);
+  });
+}
+
+// Exporta o app para ser usado em outros arquivos (como o index.js na raiz)
+module.exports = app; 
