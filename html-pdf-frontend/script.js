@@ -6,8 +6,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Durante o desenvolvimento local (usando o servidor local)
     // const BACKEND_URL = 'http://localhost:3000/convert';
     
-    // Após o deploy na Vercel (substitua pelo seu domínio real)
-    const BACKEND_URL = 'https://seu-projeto-vercel.vercel.app/convert';
+    // URL do backend na Vercel
+    const BACKEND_URL = 'https://bmo-relatorios.vercel.app/convert';
     // --------------------------
 
     const htmlInput = document.getElementById('htmlInput');
